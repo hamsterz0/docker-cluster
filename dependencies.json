@@ -1,0 +1,15 @@
+{
+  "base": {
+    "install": "config/base_config"
+  },
+  "scala": {
+    "install": "config/scala/scala_config"
+  },
+  "spark": {
+    "dep": ["scala"],
+    "install": "config/spark/spark_config"
+  },
+  "hdfs": {
+    "install": "filename"
+  }
+}
