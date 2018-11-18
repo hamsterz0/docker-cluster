@@ -2,13 +2,15 @@ import argparse
 import sys
 import json
 import pdb
+import os
+import shutil
+from distutils.dir_util import copy_tree
 
 def create_image_name(config):
     name = [framework for framework in config['processing']['framework']]
     name.append('base')
     # TODO: For now the name is just the framework name, later we can add more. 
     return ''.join(name)
-
 
 def create_docker_file(config, dep): 
     def create_docker_file_helper(framework, dep, files):
@@ -34,6 +36,14 @@ def create_docker_file(config, dep):
 def create_image(config):
     dep = json.load(open('dependencies.json'))
     create_docker_file(config, dep)
+    # create a image dir
+    os.mkdir('./image')
+    shutil.copy('./config/Dockerfile', './image')
+    os.mkdir('./image/config')
+    copy_tree('./config/spark/config', './image/config')
+    os.chdir('./image')
+    os.system('pwd')
+    os.system('docker build . -t {}'.format(create_image_name(config)))
 
 
 def image_exists(image_name):
