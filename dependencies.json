@@ -9,7 +9,7 @@
     "dep": ["scala"],
     "install": "config/spark/spark_config"
   },
-  "hdfs": {
-    "install": "filename"
+  "hadoop": {
+    "install": "config/hadoop/hadoop_config"
   }
 }

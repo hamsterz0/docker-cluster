@@ -3,6 +3,11 @@
     "num_nodes": "3"
   },
   "processing":{
-    "framework": ["spark"]
+    "library": {
+      "name": "hadoop"
+    },
+    "engine": {
+      "name": "spark"
+    }
   }
 }

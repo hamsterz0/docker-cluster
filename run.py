@@ -6,25 +6,35 @@ import os
 import shutil
 from distutils.dir_util import copy_tree
 
-def create_image_name(config):
-    name = [framework for framework in config['processing']['framework']]
+
+def get_frameworks(config, processing):
+    frameworks = []
+    for framework in processing:
+        if framework in config['processing']:
+            frameworks.append(config['processing'][framework]['name'])
+    return frameworks
+
+def create_image_name(frameworks):
+    name = [framework for framework in frameworks]
     name.append('base')
     # TODO: For now the name is just the framework name, later we can add more. 
-    return ''.join(name)
+    return '-'.join(name)
 
-def create_docker_file(config, dep): 
+def create_docker_file(frameworks, dep): 
     def create_docker_file_helper(framework, dep, files):
-        if 'dep' not in dep[framework]:
-            files.append(dep[framework]['install'])
-            return
-        for depend in dep[framework]['dep']:
-            create_docker_file_helper(depend, dep, files)
-        files.append(dep[framework]['install'])
+        for dependencies in framework:
+            files.append(dep[dependencies]['install'])
 
     base_dockerfile = dep['base']['install']
     files = [base_dockerfile]
-    for framework in config['processing']['framework']:
-        create_docker_file_helper(framework, dep, files) 
+    # install dependencies first. 
+    for framework in frameworks:
+        if 'dep' in dep[framework]:
+            create_docker_file_helper(dep[framework]['dep'], dep, files) 
+
+    # install the processing frameworks now
+    for framework in frameworks:
+        files.append(dep[framework]['install'])
 
     with open('config/Dockerfile', 'w') as outfile:
         for fname in files:
@@ -33,9 +43,9 @@ def create_docker_file(config, dep):
                     outfile.write(line)
 
 
-def create_image(config):
+def create_image(frameworks):
     dep = json.load(open('dependencies.json'))
-    create_docker_file(config, dep)
+    create_docker_file(frameworks, dep)
     # create a image dir
     os.mkdir('./image')
     shutil.copy('./config/Dockerfile', './image')
@@ -43,7 +53,7 @@ def create_image(config):
     copy_tree('./config/spark/config', './image/config')
     os.chdir('./image')
     os.system('pwd')
-    os.system('docker build . -t {}'.format(create_image_name(config)))
+    os.system('docker build . -t {}'.format(create_image_name(frameworks)))
 
 
 def image_exists(image_name):
@@ -73,9 +83,11 @@ if __name__ == '__main__':
     except FileNotFoundError:
         print('Error opening the config file')
         sys.exit(0)
+
+    processing = ['library', 'engine', 'storage']
+    frameworks = get_frameworks(config, processing)
     
-    print(create_image_name(config))
-    create_image(config)
+    create_image(frameworks)
 #    if not image_exists(config):
 #        create_image(config)
 
