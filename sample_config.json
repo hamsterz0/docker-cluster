@@ -1,0 +1,11 @@
+{
+  "cluster": {
+    "num_nodes": "3"
+  },
+  "storage": {
+    "type": "hdfs"
+  },
+  "processing":{
+    "framework": "spark"
+  }
+}
