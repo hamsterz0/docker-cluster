@@ -30,8 +30,24 @@ class DockerCluster:
         """
             Deploy the network.
         """
-        # TODO: @Ken, deloy code here. 
-        pass
+        #TODO: Specify BASEIMAGENAME correctly
+        os.system("docker rm -f \`docker ps -aq\`")
+        os.system('docker network rm myNetwork')
+        os.system('docker network create --subnet=172.18.0.0/16 myNetwork')
+        addresses = []
+        num_nodes = int(self.info['cluster']['num_nodes'])
+        for n in range(1,num_nodes+1):
+            addresses.append(n)
+        for i in addresses:
+            cmd_string = ""
+            i = int(i)
+            subarray = addresses[0:i-1] + addresses[i:num_nodes]
+            cmd_string += "docker run -d --net myNetwork --ip 172.18.1." + str(i)
+            cmd_string += " --hostname node" + str(i)
+            for j in subarray:
+                cmd_string += " --add-host node" + str(j) + ":172.18.1." + str(j)
+            cmd_string += " --name node" + str(i) + " -it BASEIMAGENAME"
+            os.system(cmd_string)
 
     def run(self):
         """
