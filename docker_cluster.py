@@ -30,14 +30,20 @@ class DockerCluster:
         """
             Deploy the network.
         """
-        #TODO: Specify BASEIMAGENAME correctly
         os.system("docker rm -f \`docker ps -aq\`")
         os.system('docker network rm myNetwork')
         os.system('docker network create --subnet=172.18.0.0/16 myNetwork')
         addresses = []
         num_nodes = int(self.info['cluster']['num_nodes'])
+        # Create some starting addresses 
         for n in range(1,num_nodes+1):
             addresses.append(n)
+        # Create the docker commands needed to build the network
+        # We create the primary host for each address, and append the other addresses
+        # For example for 3 addresses (using pseudocode): 
+        #   docker newhost addr1 --add-host addr2 --add-host addr3
+        #   docker newhost addr2 --add-host addr1 --add-host addr3 
+        #   docker newhost addr3 --add-host addr1 --add-host addr2 
         for i in addresses:
             cmd_string = ""
             i = int(i)
@@ -46,7 +52,7 @@ class DockerCluster:
             cmd_string += " --hostname node" + str(i)
             for j in subarray:
                 cmd_string += " --add-host node" + str(j) + ":172.18.1." + str(j)
-            cmd_string += " --name node" + str(i) + " -it BASEIMAGENAME"
+            cmd_string += " --name node" + str(i) + " -it " + self.image.image_name
             os.system(cmd_string)
 
     def run(self):
