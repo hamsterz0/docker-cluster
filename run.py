@@ -14,6 +14,7 @@ def get_frameworks(config, processing):
             frameworks.append(config['processing'][framework]['name'])
     return frameworks
 
+
 def create_image_name(frameworks):
     name = [framework for framework in frameworks]
     name.append('base')

@@ -2,12 +2,15 @@
   "cluster": {
     "num_nodes": "3"
   },
-  "processing":{
-    "library": {
-      "name": "hadoop"
-    },
-    "engine": {
-      "name": "spark"
+  "image":{
+    "framework": {
+      "name": "hadoop",
+      "computation": {
+        "name": "spark"
+      },
+      "resource_manager": {
+        "name": "yarn"
+      }
     }
   }
 }

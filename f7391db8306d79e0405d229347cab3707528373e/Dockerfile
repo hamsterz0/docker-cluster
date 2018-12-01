@@ -1,3 +1,16 @@
+FROM ubuntu:16.04
+USER root
+
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends openssh-server vim wget ca-certificates
+RUN echo PubkeyAuthentication yes >> /etc/ssh/ssh_config
+RUN echo Host * >> /etc/ssh/ssh_config
+RUN service ssh start
+CMD service ssh start && bash
+EXPOSE 22/tcp
+EXPOSE 22/udp
+
+
 RUN useradd -m -s /bin/bash hadoop
 WORKDIR /home/hadoop
 RUN wget https://archive.apache.org/dist/hadoop/core/hadoop-3.1.0/hadoop-3.1.0.tar.gz -P .
@@ -29,3 +42,24 @@ RUN echo JAVA_HOME=/docker-java-home >> /home/hadoop/hadoop/etc/hadoop/hadoop-en
 RUN echo HDFS_NAMENODE_USER=hadoop >> /home/hadoop/hadoop/etc/hadoop/hadoop-env.sh
 RUN echo HDFS_DATANODE_USER=hadoop >> /home/hadoop/hadoop/etc/hadoop/hadoop-env.sh                        
 RUN echo HDFS_SECONDARYNAMENODE_USER=hadoop >> /home/hadoop/hadoop/etc/hadoop/hadoop-env.sh
+# Spark
+RUN apt install openjdk-8-jre-headless ca-certificates-java --assume-yes
+WORKDIR /tmp
+RUN wget https://downloads.lightbend.com/scala/2.12.5/scala-2.12.5.tgz
+RUN tar xzf scala-2.12.5.tgz
+RUN mv scala-2.12.5 /usr/share/scala
+RUN ln -s /usr/share/scala/bin/* /usr/bin 
+RUN rm scala-2.12.5.tgz
+
+RUN echo "export HADOOP_CONF_DIR=/home/hadoop/hadoop/etc/hadoop" >> /home/hadoop/.bashrc
+RUN echo "export HADOOP_CONF_DIR=/home/hadoop/hadoop/etc/hadoop" >> /home/hadoop/.profile
+RUN echo "export SPARK_DIST_CLASSPATH=\$(hadoop classpath)" >> /home/hadoop/.bashrc
+RUN echo "export SPARK_DIST_CLASSPATH=\$(hadoop classpath)" >> /home/hadoop/.profile
+RUN echo "export SPARK_HOME=/home/hadoop/spark" >> /home/hadoop/.profile
+RUN echo "export SPARK_HOME=/home/hadoop/spark" >> /home/hadoop/.bashrc
+COPY config/workers /home/hadoop/spark/conf/slaves
+COPY config/sparkcmd.sh /home/hadoop/
+RUN chown hadoop /home/hadoop/*
+
+COPY config/core-site.xml config/hdfs-site.xml config/mapred-site.xml config/yarn-site.xml config/workers /home/hadoop/hadoop/etc/hadoop/
+RUN chown hadoop /home/hadoop/hadoop/etc/hadoop/*
