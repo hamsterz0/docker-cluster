@@ -66,7 +66,7 @@ class DockerCluster:
             self.image.create()
         else:
             print('Image exists -- Test')
-        # self.deploy()
+        self.deploy()
 
 
 class Image:
