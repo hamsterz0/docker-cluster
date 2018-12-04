@@ -13,9 +13,12 @@ def read_config_file(config):
 
 def read_file(path):
     contents = []
-    with open(path, 'r') as f:
-        for line in f:
-            contents.append(line)
+    try:
+        with open(path, 'r') as f:
+            for line in f:
+                contents.append(line)
+    except FileNotFoundError:
+        pass
     return contents
 
 class DockerCluster:
@@ -63,7 +66,7 @@ class DockerCluster:
             self.image.create()
         else:
             print('Image exists -- Test')
-        self.deploy()
+        # self.deploy()
 
 
 class Image:
@@ -80,10 +83,8 @@ class Image:
         """
         # Checking for the framework support. 
         if not self.framework.support():
-            print('''Unfortunately, we don\'t support one or more of the frameworks 
-                     you have listed in your config file. Please read the docs for
-                     more information. Thank you.''')
-            sys.exit(0)     # Better to throw an exception instead but meeeh.
+            print('We do not support 1 or more framework engines in config')
+            sys.exit(0)
         # Working on creating an image. 
         if os.path.isdir(self.image_name):
             os.system('rm -rf '+self.image_name)
@@ -98,9 +99,7 @@ class Image:
 
     def exists(self):
         """
-            Method to check if the image exists. 
-
-            Returns the image name.
+            Method to check if the image exists.
         """
         image_list = os.popen('docker image ls').read()
         print(self.image_name)
@@ -111,7 +110,8 @@ class Image:
         """
             Returns the image name
         """
-        unique_str = ''.join(["'%s':'%s';"%(key, val) for (key, val) in sorted(self.info.items())]).encode('utf-8')
+        unique_str = ''.join(["'%s':'%s';"%(key, val) for (key, val) in \
+                                    sorted(self.info.items())]).encode('utf-8')
         return hashlib.sha1(unique_str).hexdigest()
 
 
@@ -123,7 +123,7 @@ class Framework:
         self.name = info['name']
         self.base = 'config/'
         self.computation = ComputationEngine(info['computation'], self.base)
-        self.resource_man = ResourceManager(info['resource_manager'], self.base)        # Can't use this right now. 
+        self.resource_man = ResourceManager(info['resource_manager'], self.base)
     
     def docker_contents(self, image_name):
         """
@@ -135,23 +135,23 @@ class Framework:
                 docker_contents     -- list of all the commands.
         """
         docker_contents = []
-        # adding the base config (SSH and stuff). 
-        docker_contents.extend(read_file(self.base + 'base_config'))
-        # adding the hadoop config
+        # adding the base config (SSH and stuff) and config files. 
+        docker_contents.extend(read_file(self.base + 'base/base_config'))
+        os.system('cp -r ' + 'config/base/config/' + ' ' + image_name + '/config')
+        # adding the hadoop config and xml files
         docker_contents.extend(read_file(self.base + self.name + '/' + self.name + '_config'))
+        os.system('cp -r ' + self.base + self.name + '/' + 'config/' + ' ' + image_name + '/config')
         # adding the computation engines config
         docker_contents.extend(self.computation.docker_contents(image_name))
+        # adding the resource manager engines config
+        docker_contents.extend(self.resource_man.docker_contents(image_name))
         return docker_contents
 
     def support(self):
         """
             Checks if we support the computation engine or not. 
-
-            Returns
-            --------
-                Boolean     -- If we can support or not. 
         """
-        if self.computation.support():          # self.computation.support() and self.resource_man.support()
+        if self.computation.support() and self.resource_man.support():          
             return True
         return False
 
@@ -203,7 +203,7 @@ class ComputationEngine(Engine):
         super().__init__(info, base)
         # TODO: Add more here @TANMAY
     
-    def update_config_files(self):
+    def update_xml_files(self):
         # TODO: @Tanmay -> this is where you can update the config files
         pass
 
@@ -211,7 +211,7 @@ class ComputationEngine(Engine):
         docker_contents = super().docker_contents()
         config_folder = self.base + self.name + '/config/.'
         # update the XML files
-        self.update_config_files()
+        self.update_xml_files()
         os.system('cp -r ' + config_folder + ' ' + image_name + '/config')
         return docker_contents
 
@@ -224,6 +224,17 @@ class ResourceManager(Engine):
     def __init__(self, info, base='config/'):
         super().__init__(info, base)
         # TODO: Add more here @TANMAY
+
+    def update_xml_files(self):
+        # TODO: Add more here @TANMAY
+        pass
+    
+    def docker_contents(self, image_name):
+        docker_contents = super().docker_contents()
+        self.update_xml_files()
+        config_folder = self.base + self.name + '/config/.'
+        os.system('cp -r ' + config_folder + ' ' + image_name + '/config')
+        return docker_contents
 
 
 if __name__ == '__main__':
