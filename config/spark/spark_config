@@ -1,5 +1,4 @@
 # Spark
-RUN apt install openjdk-8-jre-headless ca-certificates-java --assume-yes
 WORKDIR /tmp
 RUN wget https://downloads.lightbend.com/scala/2.12.5/scala-2.12.5.tgz
 RUN tar xzf scala-2.12.5.tgz

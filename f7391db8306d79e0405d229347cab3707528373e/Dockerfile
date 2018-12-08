@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM openjdk:8
 USER root
 
 RUN apt-get update
@@ -43,7 +43,6 @@ RUN echo HDFS_NAMENODE_USER=hadoop >> /home/hadoop/hadoop/etc/hadoop/hadoop-env.
 RUN echo HDFS_DATANODE_USER=hadoop >> /home/hadoop/hadoop/etc/hadoop/hadoop-env.sh                        
 RUN echo HDFS_SECONDARYNAMENODE_USER=hadoop >> /home/hadoop/hadoop/etc/hadoop/hadoop-env.sh
 # Spark
-RUN apt install openjdk-8-jre-headless ca-certificates-java --assume-yes
 WORKDIR /tmp
 RUN wget https://downloads.lightbend.com/scala/2.12.5/scala-2.12.5.tgz
 RUN tar xzf scala-2.12.5.tgz
