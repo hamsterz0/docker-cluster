@@ -31,6 +31,8 @@ COPY config/id_rsa.pub /home/hadoop/.ssh/id_rsa.pub
 COPY config/id_rsa /home/hadoop/.ssh/id_rsa
 RUN cat /home/hadoop/.ssh/id_rsa.pub >> /home/hadoop/.ssh/authorized_keys
 RUN chown hadoop .ssh -R
+RUN chmod 0600 /home/hadoop/.ssh/id_rsa
+RUN chmod 0600 /home/hadoop/.ssh/authorized_keys
 
 RUN echo PATH=/home/hadoop/hadoop/bin:/home/hadoop/hadoop/sbin:$PATH >> /home/hadoop/.profile
 RUN echo PATH=/home/hadoop/hadoop/bin:/home/hadoop/hadoop/sbin:$PATH >> /home/hadoop/.bashrc

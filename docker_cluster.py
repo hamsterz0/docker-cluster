@@ -2,6 +2,8 @@ import json
 import hashlib
 import os
 import sys
+import time
+
 
 def read_config_file(config):
     try:
@@ -10,6 +12,7 @@ def read_config_file(config):
         print('Error opening the config file')
         sys.exit(0)
     return config
+
 
 def read_file(path):
     contents = []
@@ -20,6 +23,7 @@ def read_file(path):
     except FileNotFoundError:
         pass
     return contents
+
 
 class DockerCluster:
     """
@@ -33,6 +37,8 @@ class DockerCluster:
         """
             Deploy the network.
         """
+        # TODO @KEN: This command is wrong. What should be the substitute? Even if we fix this we don't want to delete
+        # all containers. Run delete only on containers using self.image.image_name as the image
         os.system("docker rm -f \`docker ps -aq\`")
         os.system('docker network rm myNetwork')
         os.system('docker network create --subnet=172.18.0.0/16 myNetwork')
@@ -46,17 +52,48 @@ class DockerCluster:
         # For example for 3 addresses (using pseudocode): 
         #   docker newhost addr1 --add-host addr2 --add-host addr3
         #   docker newhost addr2 --add-host addr1 --add-host addr3 
-        #   docker newhost addr3 --add-host addr1 --add-host addr2 
+        #   docker newhost addr3 --add-host addr1 --add-host addr2
+
+        # Call the node1 as nodemaster for consistency
         for i in addresses:
             cmd_string = ""
             i = int(i)
             subarray = addresses[0:i-1] + addresses[i:num_nodes]
             cmd_string += "docker run -d --net myNetwork --ip 172.18.1." + str(i)
-            cmd_string += " --hostname node" + str(i)
+            cmd_string += " --hostname node" + (str(i) if i > 1 else "master")
             for j in subarray:
-                cmd_string += " --add-host node" + str(j) + ":172.18.1." + str(j)
-            cmd_string += " --name node" + str(i) + " -it " + self.image.image_name
+                cmd_string += " --add-host node" + (str(j) if j > 1 else "master") + ":172.18.1." + str(j)
+            cmd_string += " --name node" + (str(i) if i > 1 else "master") + " -it " + self.image.image_name
             os.system(cmd_string)
+
+        # Formatting HDFS
+        os.system("docker exec -u hadoop nodemaster /home/hadoop/hadoop/bin/hdfs namenode -format")
+
+        # Start all the required servicesg
+        self.start_services()
+
+    def start_services(self):
+        """
+        Start the services on this container
+        :return:
+        """
+        # TODO @KEN: Make this more modular, right now only works for 3 node and is hardcoding expected services, Also
+        # use nodemaster instead of node1 for consistency. Also we have to make the workers file in config have same
+        # number of nodes
+        # start containers
+        os.system("docker start nodemaster node2 node3")
+        time.sleep(5)
+        # Start hdfs
+        os.system("docker exec -u hadoop nodemaster /home/hadoop/hadoop/sbin/start-dfs.sh")
+        time.sleep(5)
+        # start yarn
+        os.system("docker exec -u hadoop -d nodemaster /home/hadoop/hadoop/sbin/start-yarn.sh")
+        time.sleep(5)
+        # start spark
+        os.system("docker exec -u hadoop -d nodemaster /home/hadoop/sparkcmd.sh start")
+        os.system("docker exec -u hadoop -d node2 /home/hadoop/sparkcmd.sh start")
+        os.system("docker exec -u hadoop -d node3 /home/hadoop/sparkcmd.sh start")
+
 
     def run(self):
         """
@@ -83,7 +120,7 @@ class Image:
         """
         # Checking for the framework support. 
         if not self.framework.support():
-            print('We do not support 1 or more framework engines in config')
+            print('We do not support 1 or more frameworks in config')
             sys.exit(0)
         # Working on creating an image. 
         if os.path.isdir(self.image_name):
@@ -191,7 +228,6 @@ class Engine:
     @property
     def config_path(self):
         return self.base + self.name
-
 
 
 class ComputationEngine(Engine):
