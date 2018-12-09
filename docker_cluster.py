@@ -48,6 +48,12 @@ class DockerCluster:
         os.system('docker network create --subnet=172.18.0.0/16 myNetwork')
         addresses = []
         num_nodes = int(self.info['cluster']['num_nodes'])
+        nodes = []
+        for i in range(1, num_nodes + 1):
+            if (i == 1):
+                nodes.append("nodemaster")
+            else:
+                nodes.append("node" + str(i))
         # Create some starting addresses 
         for n in range(1,num_nodes+1):
             addresses.append(n)
@@ -73,10 +79,12 @@ class DockerCluster:
         # Formatting HDFS
         os.system("docker exec -u hadoop nodemaster /home/hadoop/hadoop/bin/hdfs namenode -format")
 
-        # Start all the required servicesg
-        self.start_services()
+        self.move_workers_file(nodes)
 
-    def start_services(self):
+        # Start all the required servicesg
+        self.start_services(nodes)
+
+    def start_services(self, nodes):
         """
         Start the services on this container
         :return:
@@ -85,11 +93,7 @@ class DockerCluster:
         # number of nodes
 
         # start containers
-        num_nodes = int(self.info['cluster']['num_nodes'])
-        nodes = []
-        for i in range(1,num_nodes+1):
-            if (i == 1): nodes.append("nodemaster")
-            else: nodes.append("node" + str(i))
+
         start_cmd = "docker start "
         separator = " "
         start_cmd += separator.join(nodes)
@@ -119,6 +123,22 @@ class DockerCluster:
         else:
             print('Image exists -- Test')
         self.deploy()
+
+    def move_workers_file(self, nodes):
+        """
+        Move the workers file to all the nodes
+        :return:
+        """
+        f = open("workers", "w+")
+        for i in range(2, int(len(nodes))+1):
+            f.write("node"+str(i)+"\n")
+        f.close()
+
+        for node in nodes:
+            os.system("docker cp workers {}:/home/hadoop/spark/conf/slaves".format(node))
+            os.system("docker cp workers {}:/home/hadoop/hadoop/etc/hadoop/".format(node))
+
+        os.system("rm workers")
 
 
 class Image:
