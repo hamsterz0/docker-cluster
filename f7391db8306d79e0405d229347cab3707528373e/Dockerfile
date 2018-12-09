@@ -44,6 +44,7 @@ RUN echo JAVA_HOME=/docker-java-home >> /home/hadoop/hadoop/etc/hadoop/hadoop-en
 RUN echo HDFS_NAMENODE_USER=hadoop >> /home/hadoop/hadoop/etc/hadoop/hadoop-env.sh
 RUN echo HDFS_DATANODE_USER=hadoop >> /home/hadoop/hadoop/etc/hadoop/hadoop-env.sh                        
 RUN echo HDFS_SECONDARYNAMENODE_USER=hadoop >> /home/hadoop/hadoop/etc/hadoop/hadoop-env.sh
+RUN ln -s /usr/bin/java /bin/java
 # Spark
 WORKDIR /tmp
 RUN wget https://downloads.lightbend.com/scala/2.12.5/scala-2.12.5.tgz
