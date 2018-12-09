@@ -70,7 +70,7 @@ class DockerCluster:
             cmd_string += "docker run -d --net myNetwork --ip 172.18.1." + str(i)
             cmd_string += " --hostname node" + (str(i) if i > 1 else "master")
             if i == 1:
-                cmd_string += " -p 9870:9870 -p 8088:8088 -p 19888:19888"
+                cmd_string += " -p 50070:50070 -p 8088:8088"
             for j in subarray:
                 cmd_string += " --add-host node" + (str(j) if j > 1 else "master") + ":172.18.1." + str(j)
             cmd_string += " --name node" + (str(i) if i > 1 else "master") + " -it " + self.image.image_name
@@ -128,13 +128,14 @@ class DockerCluster:
         :return:
         """
         f = open("workers", "w+")
-        for i in range(2, int(len(nodes))+1):
-            f.write("node"+str(i)+"\n")
+        for node in nodes[1:]:
+            f.write(node+"\n")
         f.close()
 
         for node in nodes:
             os.system("docker cp workers {}:/home/hadoop/spark/conf/slaves".format(node))
             os.system("docker cp workers {}:/home/hadoop/hadoop/etc/hadoop/".format(node))
+            os.system("docker cp workers {}:/home/hadoop/hadoop/etc/hadoop/slaves".format(node))
 
         os.system("rm workers")
 

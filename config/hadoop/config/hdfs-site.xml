@@ -10,10 +10,6 @@
             <value>/home/hadoop/data/dataNode</value>
     </property>
     <property>
-      <name>dfs.namenode.checkpoint.dir</name>
-      <value>/home/hadoop/data/namesecondary</value>
-    </property>    
-    <property>
             <name>dfs.replication</name>
             <value>1</value>
     </property>
