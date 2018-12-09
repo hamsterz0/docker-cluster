@@ -37,9 +37,13 @@ class DockerCluster:
         """
             Deploy the network.
         """
-        # TODO @KEN: This command is wrong. What should be the substitute? Even if we fix this we don't want to delete
+        # TODO Not sure if this command is right. What should be the substitute? Even if we fix this we don't want to delete
         # all containers. Run delete only on containers using self.image.image_name as the image
-        os.system("docker rm -f \`docker ps -aq\`")
+        image_name = self.image.image_name
+        remove_command = ("docker ps -a | awk '{ print $1,$2 }' | grep '"
+            + image_name +"' | awk '{print $1 }' | xargs -I {} docker rm {}")
+        os.system(remove_command)
+        #os.system("docker rm -f \`docker ps -aq\`")
         os.system('docker network rm myNetwork')
         os.system('docker network create --subnet=172.18.0.0/16 myNetwork')
         addresses = []
@@ -77,23 +81,34 @@ class DockerCluster:
         Start the services on this container
         :return:
         """
-        # TODO @KEN: Make this more modular, right now only works for 3 node and is hardcoding expected services, Also
-        # use nodemaster instead of node1 for consistency. Also we have to make the workers file in config have same
+        # TODO We have to make the workers file in config have same
         # number of nodes
-        # start containers
-        os.system("docker start nodemaster node2 node3")
-        time.sleep(5)
-        # Start hdfs
-        os.system("docker exec -u hadoop nodemaster /home/hadoop/hadoop/sbin/start-dfs.sh")
-        time.sleep(5)
-        # start yarn
-        os.system("docker exec -u hadoop -d nodemaster /home/hadoop/hadoop/sbin/start-yarn.sh")
-        time.sleep(5)
-        # start spark
-        os.system("docker exec -u hadoop -d nodemaster /home/hadoop/sparkcmd.sh start")
-        os.system("docker exec -u hadoop -d node2 /home/hadoop/sparkcmd.sh start")
-        os.system("docker exec -u hadoop -d node3 /home/hadoop/sparkcmd.sh start")
 
+        # start containers
+        num_nodes = int(self.info['cluster']['num_nodes'])
+        nodes = []
+        for i in range(1,num_nodes+1):
+            if (i == 1): nodes.append("nodemaster")
+            else: nodes.append("node" + str(i))
+        start_cmd = "docker start "
+        separator = " "
+        start_cmd += separator.join(nodes)
+        os.system(start_cmd)
+        #os.system("docker start nodemaster node2 node3")
+        time.sleep(5)
+        if self.info['image']['framework']['name'] == "hadoop":
+            # Start hdfs
+            os.system("docker exec -u hadoop nodemaster /home/hadoop/hadoop/sbin/start-dfs.sh")
+            time.sleep(5)
+        # start yarn
+        if self.info['image']['framework']['resource_manager']['name'] == 'yarn':
+            os.system("docker exec -u hadoop -d nodemaster /home/hadoop/hadoop/sbin/start-yarn.sh")
+            time.sleep(5)
+        # start spark
+        if self.info['image']['framework']['computation']['name'] == 'spark':
+            for node in nodes:
+                cmd = "docker exec -u hadoop -d " + node + " /home/hadoop/sparkcmd.sh start"
+                os.system(cmd)
 
     def run(self):
         """
