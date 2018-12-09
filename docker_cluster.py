@@ -63,14 +63,14 @@ class DockerCluster:
         #   docker newhost addr1 --add-host addr2 --add-host addr3
         #   docker newhost addr2 --add-host addr1 --add-host addr3 
         #   docker newhost addr3 --add-host addr1 --add-host addr2
-
-        # Call the node1 as nodemaster for consistency
         for i in addresses:
             cmd_string = ""
             i = int(i)
             subarray = addresses[0:i-1] + addresses[i:num_nodes]
             cmd_string += "docker run -d --net myNetwork --ip 172.18.1." + str(i)
             cmd_string += " --hostname node" + (str(i) if i > 1 else "master")
+            if i == 1:
+                cmd_string += " -p 9870:9870 -p 8088:8088 -p 19888:19888"
             for j in subarray:
                 cmd_string += " --add-host node" + (str(j) if j > 1 else "master") + ":172.18.1." + str(j)
             cmd_string += " --name node" + (str(i) if i > 1 else "master") + " -it " + self.image.image_name
@@ -81,7 +81,7 @@ class DockerCluster:
 
         self.move_workers_file(nodes)
 
-        # Start all the required servicesg
+        # Start all the required services
         self.start_services(nodes)
 
     def start_services(self, nodes):
@@ -89,8 +89,6 @@ class DockerCluster:
         Start the services on this container
         :return:
         """
-        # TODO We have to make the workers file in config have same
-        # number of nodes
 
         # start containers
 
