@@ -5,4 +5,8 @@
             <name>fs.default.name</name>
             <value>hdfs://nodemaster:9000</value>
         </property>
+        <property>
+            <name>hadoop.http.staticuser.user</name>
+            <value>yarn</value>
+        </property>
     </configuration>

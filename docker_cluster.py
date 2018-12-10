@@ -211,7 +211,7 @@ class Framework:
         os.system('cp -r ' + 'config/base/config/' + ' ' + image_name + '/config')
         # adding the hadoop config and xml files
         docker_contents.extend(read_file(self.base + self.name + '/' + self.name + '_config'))
-        os.system('cp -r ' + self.base + self.name + '/' + 'config/' + ' ' + image_name + '/config')
+        os.system('cp -r ' + self.base + self.name + '/' + 'config/*' + ' ' + image_name + '/config')
         # adding the computation engines config
         docker_contents.extend(self.computation.docker_contents(image_name))
         # adding the resource manager engines config
